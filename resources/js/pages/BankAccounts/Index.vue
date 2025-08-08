@@ -432,7 +432,6 @@ onMounted(() => {
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Account Number</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Balance</th>
-                                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Initial Amount</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
                                 </tr>
@@ -464,10 +463,7 @@ onMounted(() => {
                                         <span class="font-mono text-sm">{{ account.account_number }}</span>
                                     </td>
                                     <td class="p-4 align-middle font-semibold">
-                                        {{ formatCurrency(account.current_balance) }}
-                                    </td>
-                                    <td class="p-4 align-middle">
-                                        {{ formatCurrency(account.initial_amount) }}
+                                        {{ formatCurrency(account.possible_current_balance) }}
                                     </td>
                                     <td class="p-4 align-middle">
                                         <span 

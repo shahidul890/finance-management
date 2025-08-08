@@ -33,6 +33,10 @@ class BankAccount extends Model
         'additional_info' => 'array',
     ];
 
+    protected $appends = [
+        'possible_current_balance',
+    ];
+
     // Relationships
     public function user(): BelongsTo
     {
@@ -54,6 +58,11 @@ class BankAccount extends Model
         return $this->hasMany(Loan::class);
     }
 
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
     // Scopes
     public function scopeForUser(Builder $query, int $userId): Builder
     {
@@ -70,4 +79,20 @@ class BankAccount extends Model
     {
         return number_format($this->current_balance, 2);
     }
+
+    public function incomes(): HasMany
+    {
+        return $this->hasMany(Income::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    public function getPossibleCurrentBalanceAttribute()
+    {
+        return $this->incomes()->sum('amount') - $this->expenses()->sum('amount');
+    }
+
 }

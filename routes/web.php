@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -39,7 +40,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bank-accounts', function () {
         return Inertia::render('BankAccounts/Index');
     })->name('bank-accounts.index');
-    
+
+    Route::inertia('transactions', 'Transactions/Index')->name('transactions.index');
+
     Route::get('/investments', function () {
         return Inertia::render('Investments/Index');
     })->name('investments.index');
@@ -74,6 +77,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Bank Accounts
         Route::apiResource('bank-accounts', BankAccountController::class);
+
+        // Transactions
+        Route::apiResource('transactions', TransactionController::class);
         
         // Clients
         Route::apiResource('clients', ClientController::class);

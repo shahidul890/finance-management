@@ -17,11 +17,22 @@ class Category extends Model
         'type',
         'color',
         'user_id',
+        'parent_id',
     ];
 
     protected $casts = [
         'type' => 'string',
     ];
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
 
     /**
      * Get the user that owns the category.

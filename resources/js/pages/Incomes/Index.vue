@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { onMounted, ref, computed } from 'vue';
-import { useFinance, type Income, type Category, type Client } from '@/composables/useFinance';
+import { useFinance, type Income, type Category, type Client, BankAccount } from '@/composables/useFinance';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ const {
     deleteIncome, 
     fetchCategories,
     fetchClients,
+    fetchBankAccounts,
     loading, 
     formatCurrency 
 } = useFinance();
@@ -32,6 +33,7 @@ const {
 const incomes = ref<{ data: Income[]; meta: any; links: any }>({ data: [], meta: {}, links: {} });
 const categories = ref<Category[]>([]);
 const clients = ref<Client[]>([]);
+const bankAccounts = ref<BankAccount[]>([]);
 const searchQuery = ref('');
 const selectedCategory = ref<string>('');
 const showCreateDialog = ref(false);
@@ -46,6 +48,7 @@ const form = ref({
     income_date: new Date().toISOString().split('T')[0],
     category_id: '',
     client_id: '',
+    bank_account_id: '',
     source: '',
     is_recurring: false,
     recurring_period: 'monthly',
@@ -91,6 +94,15 @@ const loadClients = async () => {
     }
 };
 
+const loadBankAccounts = async () => {
+    try {
+        const result = await fetchBankAccounts();
+        bankAccounts.value = Array.isArray(result.data) ? result.data : [result.data];
+    } catch (err) {
+        console.error('Failed to load bank accounts:', err);
+    }
+};
+
 const resetForm = () => {
     form.value = {
         title: '',
@@ -99,6 +111,7 @@ const resetForm = () => {
         income_date: new Date().toISOString().split('T')[0],
         category_id: '',
         client_id: '',
+        bank_account_id: '',
         source: '',
         is_recurring: false,
         recurring_period: 'monthly',
@@ -134,6 +147,7 @@ const handleEdit = (income: Income) => {
         income_date: income.income_date,
         category_id: income.category_id?.toString() || '',
         client_id: income.client_id?.toString() || '',
+        bank_account_id: income.bank_account_id?.toString() || '',
         source: income.source || '',
         is_recurring: income.is_recurring || false,
         recurring_period: income.recurring_period || 'monthly',
@@ -194,6 +208,7 @@ onMounted(() => {
     loadIncomes();
     loadCategories();
     loadClients();
+    loadBankAccounts();
 });
 </script>
 
@@ -282,6 +297,23 @@ onMounted(() => {
                                             :value="client.id.toString()"
                                         >
                                             {{ client.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="grid gap-2">
+                                    <Label for="client">Bank Account</Label>
+                                    <select 
+                                        id="client" 
+                                        v-model="form.bank_account_id"
+                                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <option value="">Hand Cash</option>
+                                        <option 
+                                            v-for="bank in bankAccounts" 
+                                            :key="bank.id"
+                                            :value="bank.id.toString()"
+                                        >
+                                            {{  bank.account_number + ' - ' + bank.bank_name }}
                                         </option>
                                     </select>
                                 </div>
@@ -384,6 +416,7 @@ onMounted(() => {
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Title</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Category</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Client</th>
+                                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Bank</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Amount</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Source</th>
@@ -417,6 +450,13 @@ onMounted(() => {
                                             <div v-if="income.client.company" class="text-muted-foreground">{{ income.client.company }}</div>
                                         </div>
                                         <span v-else class="text-muted-foreground">No client</span>
+                                    </td>
+                                    <td class="p-4 align-middle">
+                                        <div v-if="income.bank_account" class="text-sm">
+                                            <div class="font-medium">{{ income.bank_account.account_number }}</div>
+                                            <div v-if="income.bank_account.bank_name" class="text-muted-foreground">{{ income.bank_account.bank_name }}</div>
+                                        </div>
+                                        <span v-else class="text-muted-foreground">No bank account</span>
                                     </td>
                                     <td class="p-4 align-middle font-semibold text-green-600">
                                         {{ formatCurrency(income.amount) }}
@@ -550,6 +590,23 @@ onMounted(() => {
                                         :value="client.id.toString()"
                                     >
                                         {{ client.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-bank_account">Bank Account</Label>
+                                <select 
+                                    id="edit-bank_account" 
+                                    v-model="form.bank_account_id"
+                                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <option value="">No Bank Account</option>
+                                    <option 
+                                        v-for="bank in bankAccounts" 
+                                        :key="bank.id"
+                                        :value="bank.id.toString()"
+                                    >
+                                        {{ bank.account_number + " - " +  bank.bank_name }}
                                     </option>
                                 </select>
                             </div>

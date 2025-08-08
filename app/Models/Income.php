@@ -19,6 +19,7 @@ class Income extends Model
         'user_id',
         'category_id',
         'client_id',
+        'bank_account_id',
         'source',
         'is_recurring',
         'recurring_frequency',
@@ -27,7 +28,7 @@ class Income extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'income_date' => 'date',
+        'income_date' => 'date:Y-m-d',
         'is_recurring' => 'boolean',
         'tags' => 'array',
     ];
@@ -54,6 +55,14 @@ class Income extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /**
+     * Get the bank account
+     */
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 
     /**

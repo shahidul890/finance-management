@@ -15,7 +15,7 @@ class IncomeController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Income::forUser(Auth::id())->with(['category', 'client']);
+        $query = Income::forUser(Auth::id())->with(['category', 'client', 'bankAccount']);
 
         // Filter by date range
         if ($request->has('start_date') && $request->has('end_date')) {
@@ -62,7 +62,8 @@ class IncomeController extends Controller
             'amount' => 'required|numeric|min:0',
             'income_date' => 'required|date',
             'category_id' => 'nullable|exists:categories,id',
-            'client_id' => 'nullable|exists:clients,id',
+            'client_id' => 'nullable|integer|exists:clients,id',
+            'bank_account_id' => 'nullable|integer|exists:bank_accounts,id',
             'source' => 'nullable|string|max:100',
             'is_recurring' => 'boolean',
             'recurring_frequency' => [
@@ -75,26 +76,6 @@ class IncomeController extends Controller
         ]);
 
         $validated['user_id'] = Auth::id();
-
-        // Verify category belongs to user if provided
-        if (isset($validated['category_id'])) {
-            $categoryBelongsToUser = \App\Models\Category::where('id', $validated['category_id'])
-                                                        ->where('user_id', Auth::id())
-                                                        ->exists();
-            if (!$categoryBelongsToUser) {
-                return response()->json(['error' => 'Invalid category'], 422);
-            }
-        }
-
-        // Verify client belongs to user if provided
-        if (isset($validated['client_id'])) {
-            $clientBelongsToUser = \App\Models\Client::where('id', $validated['client_id'])
-                                                   ->where('user_id', Auth::id())
-                                                   ->exists();
-            if (!$clientBelongsToUser) {
-                return response()->json(['error' => 'Invalid client'], 422);
-            }
-        }
 
         $income = Income::create($validated);
 
@@ -136,6 +117,7 @@ class IncomeController extends Controller
             'income_date' => 'required|date',
             'category_id' => 'nullable|exists:categories,id',
             'client_id' => 'nullable|exists:clients,id',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'source' => 'nullable|string|max:100',
             'is_recurring' => 'boolean',
             'recurring_frequency' => [
@@ -146,26 +128,6 @@ class IncomeController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
         ]);
-
-        // Verify category belongs to user if provided
-        if (isset($validated['category_id'])) {
-            $categoryBelongsToUser = \App\Models\Category::where('id', $validated['category_id'])
-                                                        ->where('user_id', Auth::id())
-                                                        ->exists();
-            if (!$categoryBelongsToUser) {
-                return response()->json(['error' => 'Invalid category'], 422);
-            }
-        }
-
-        // Verify client belongs to user if provided
-        if (isset($validated['client_id'])) {
-            $clientBelongsToUser = \App\Models\Client::where('id', $validated['client_id'])
-                                                   ->where('user_id', Auth::id())
-                                                   ->exists();
-            if (!$clientBelongsToUser) {
-                return response()->json(['error' => 'Invalid client'], 422);
-            }
-        }
 
         $income->update($validated);
 

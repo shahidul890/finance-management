@@ -19,7 +19,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const { 
-    fetchCategories, 
+    fetchCategories,
+    fetchParentCategories,
     createCategory, 
     updateCategory, 
     deleteCategory,
@@ -27,6 +28,7 @@ const {
 } = useFinance();
 
 const categories = ref<Category[]>([]);
+const parent_categories = ref<Category[]>([]);
 const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
 const editingCategory = ref<Category | null>(null);
@@ -35,6 +37,7 @@ const editingCategory = ref<Category | null>(null);
 const form = ref({
     name: '',
     description: '',
+    parent_id: '',
     type: 'expense' as 'expense' | 'income' | 'both',
     color: '#3B82F6',
 });
@@ -42,7 +45,9 @@ const form = ref({
 const loadCategories = async () => {
     try {
         const result = await fetchCategories();
+        const httpParent = await fetchParentCategories();
         categories.value = result.categories;
+        parent_categories.value = httpParent.categories;
     } catch (err) {
         console.error('Failed to load categories:', err);
     }
@@ -52,6 +57,7 @@ const resetForm = () => {
     form.value = {
         name: '',
         description: '',
+        parent_id: '',
         type: 'expense',
         color: '#3B82F6',
     };
@@ -155,6 +161,23 @@ onMounted(() => {
                                     v-model="form.name" 
                                     placeholder="Category name"
                                 />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="name">Parent Category</Label>
+                                <select 
+                                    id="type" 
+                                    v-model="form.parent_id" 
+                                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <option value="">No Parent category</option>
+                                    <option 
+                                        v-for="parent in parent_categories" 
+                                        :key="parent.id"
+                                        :value="parent.id.toString()"
+                                    >
+                                        {{  parent.name }}
+                                    </option>
+                                </select>
                             </div>
                             <div class="grid gap-2">
                                 <Label for="description">Description</Label>
@@ -273,6 +296,23 @@ onMounted(() => {
                                 v-model="form.description" 
                                 placeholder="Optional description"
                             />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="name">Parent Category</Label>
+                            <select 
+                                id="type" 
+                                v-model="form.parent_id" 
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <option value="">No Parent category</option>
+                                <option 
+                                    v-for="parent in parent_categories" 
+                                    :key="parent.id"
+                                    :value="parent.id.toString()"
+                                >
+                                    {{  parent.name }}
+                                </option>
+                            </select>
                         </div>
                         <div class="grid gap-2">
                             <Label for="edit-type">Type</Label>

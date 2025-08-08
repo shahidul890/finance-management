@@ -46,6 +46,8 @@ export interface Income {
     category?: Category;
     client_id?: number;
     client?: Client;
+    bank_account_id?: number;
+    bank_account?: BankAccount
     source?: string;
     is_recurring: boolean;
     recurring_frequency?: string;
@@ -97,6 +99,7 @@ export interface BankAccount {
     account_type: 'savings' | 'checking' | 'credit' | 'investment';
     current_balance: number;
     initial_amount: number;
+    possible_current_balance: number,
     description?: string;
     user_id: number;
     is_active: boolean;
@@ -247,6 +250,12 @@ export function useFinance() {
     // Categories
     async function fetchCategories(type?: string): Promise<{ categories: Category[] }> {
         const url = type ? `/api/categories?type=${type}` : '/api/categories';
+        return apiCall<{ categories: Category[] }>(url);
+    }
+
+    // Categories
+    async function fetchParentCategories(type?: string): Promise<{ categories: Category[] }> {
+        const url = type ? `/api/categories?type=${type}&parents_only=true` : '/api/categories?parents_only=true';
         return apiCall<{ categories: Category[] }>(url);
     }
 
@@ -562,6 +571,7 @@ export function useFinance() {
         
         // Categories
         fetchCategories,
+        fetchParentCategories,
         createCategory,
         updateCategory,
         deleteCategory,
