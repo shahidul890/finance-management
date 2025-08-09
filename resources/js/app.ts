@@ -25,3 +25,13 @@ createInertiaApp({
 
 // This will set light / dark mode on page load...
 initializeTheme();
+
+// Register service worker using Vite PWA helper (handles dev/prod paths)
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    // Lazy import to avoid SSR/tooling issues
+    import('virtual:pwa-register').then(({ registerSW }) => {
+        registerSW({ immediate: true });
+    }).catch(() => {
+        // no-op if plugin not available in certain environments
+    });
+}
