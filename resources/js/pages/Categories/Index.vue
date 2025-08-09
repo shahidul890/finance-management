@@ -80,6 +80,7 @@ const handleEdit = (category: Category) => {
     form.value = {
         name: category.name,
         description: category.description || '',
+        parent_id: category.parent_id ? category.parent_id.toString() : '',
         type: category.type,
         color: category.color,
     };

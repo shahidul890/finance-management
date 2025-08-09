@@ -7,6 +7,7 @@ import { useFinance, type DashboardData } from '@/composables/useFinance';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, DollarSign, Repeat } from 'lucide-vue-next';
+import {DateRangePicker} from '@/components/ui/daterangepicker';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -18,13 +19,38 @@ const breadcrumbs: BreadcrumbItem[] = [
 const { fetchDashboard, loading, error, formatCurrency } = useFinance();
 const dashboardData = ref<DashboardData | null>(null);
 const selectedPeriod = ref('month');
+const dateRange = ref<{ start: Date; end: Date } | null>(null);
 
 const loadDashboard = async () => {
     try {
-        dashboardData.value = await fetchDashboard({ period: selectedPeriod.value });
+        const params: { period?: string; start_date?: string; end_date?: string } = {};
+        
+        if (dateRange.value) {
+            // If custom date range is selected, use it
+            params.start_date = dateRange.value.start.toISOString().split('T')[0];
+            params.end_date = dateRange.value.end.toISOString().split('T')[0];
+        }
+
+        params.period = selectedPeriod.value;
+        
+        dashboardData.value = await fetchDashboard(params);
     } catch (err) {
         console.error('Failed to load dashboard:', err);
     }
+};
+
+const onDateRangeChange = (range: { start: Date; end: Date } | null) => {
+    dateRange.value = range;
+    if (range) {
+        selectedPeriod.value = 'custom';
+    }
+    loadDashboard();
+};
+
+const onPeriodChange = (period: string) => {
+    selectedPeriod.value = period;
+    dateRange.value = null; // Clear custom date range
+    loadDashboard();
 };
 
 onMounted(() => {
@@ -38,6 +64,13 @@ const getBalanceColor = (balance: number) => {
 const getPercentageColor = (percentage: number) => {
     return percentage >= 0 ? 'text-red-500' : 'text-green-500';
 };
+
+const getCurrentPeriodText = () => {
+    if (dateRange.value) {
+        return `Custom Range: ${dateRange.value.start.toLocaleDateString()} - ${dateRange.value.end.toLocaleDateString()}`;
+    }
+    return selectedPeriod.value === 'month' ? 'This Month' : 'This Year';
+};
 </script>
 
 <template>
@@ -46,23 +79,42 @@ const getPercentageColor = (percentage: number) => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 overflow-x-auto">
             <!-- Period Selector -->
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold">Financial Dashboard</h1>
-                <div class="flex gap-2">
-                    <Button 
-                        :variant="selectedPeriod === 'month' ? 'default' : 'outline'"
-                        size="sm"
-                        @click="selectedPeriod = 'month'; loadDashboard()"
-                    >
-                        This Month
-                    </Button>
-                    <Button 
-                        :variant="selectedPeriod === 'year' ? 'default' : 'outline'"
-                        size="sm"
-                        @click="selectedPeriod = 'year'; loadDashboard()"
-                    >
-                        This Year
-                    </Button>
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold">Financial Dashboard</h1>
+                    <p class="text-sm text-muted-foreground mt-1">
+                        Showing data for: {{ getCurrentPeriodText() }}
+                    </p>
+                </div>
+                <div class="flex gap-2 items-center flex-wrap">
+                    <div class="flex gap-2">
+                        <Button 
+                            :variant="selectedPeriod === 'last_month' ? 'default' : 'outline'"
+                            size="sm"
+                            @click="onPeriodChange('last_month')"
+                        >
+                            Last Month
+                        </Button>
+                        <Button 
+                            :variant="selectedPeriod === 'month' ? 'default' : 'outline'"
+                            size="sm"
+                            @click="onPeriodChange('month')"
+                        >
+                            This Month
+                        </Button>
+                        <Button 
+                            :variant="selectedPeriod === 'year' ? 'default' : 'outline'"
+                            size="sm"
+                            @click="onPeriodChange('year')"
+                        >
+                            This Year
+                        </Button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <!-- <span class="text-sm text-muted-foreground">Custom Range:</span> -->
+                        <DateRangePicker @update:modelValue="onDateRangeChange" />
+                    </div>
                 </div>
             </div>
 
@@ -147,7 +199,7 @@ const getPercentageColor = (percentage: number) => {
                 </div>
 
                 <!-- Budget Analysis -->
-                <Card v-if="selectedPeriod === 'month'">
+                <Card v-if="selectedPeriod === 'month' && dashboardData.budget_analysis">
                     <CardHeader>
                         <CardTitle>Budget Analysis</CardTitle>
                         <CardDescription>Comparison with previous month</CardDescription>

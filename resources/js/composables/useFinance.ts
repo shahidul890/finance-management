@@ -7,6 +7,7 @@ export interface Category {
     type: 'expense' | 'income' | 'both';
     color: string;
     user_id: number;
+    parent_id: number | null;
     created_at: string;
     updated_at: string;
 }

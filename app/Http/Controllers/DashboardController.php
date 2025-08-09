@@ -33,6 +33,11 @@ class DashboardController extends Controller
                 $startDate = Carbon::now()->startOfYear();
                 $endDate = Carbon::now()->endOfYear();
                 break;
+            case 'last_month':
+                $startDate = Carbon::now()->subMonth()->startOfMonth();
+                $endDate = Carbon::now()->subMonth()->endOfMonth();
+                break;
+
             case 'custom':
                 $startDate = Carbon::parse($request->get('start_date', Carbon::now()->startOfMonth()));
                 $endDate = Carbon::parse($request->get('end_date', Carbon::now()->endOfMonth()));
