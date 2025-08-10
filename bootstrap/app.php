@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        $middleware->alias([
+            '2fa' => \App\Http\Middleware\TwoFactorMiddleware::class
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

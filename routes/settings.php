@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', '2fa'])->group(function () {
     Route::redirect('settings', '/settings/profile');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -22,3 +23,8 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
 });
+
+Route::get('settings/2fa', [TwoFactorController::class, 'showTwoFactorSettings'])->name('settings.2fa')->middleware(['auth']);
+
+Route::post('settings/2fa', [TwoFactorController::class, 'enableTwoFactor'])->name('settings.2fa.enable')->middleware(['auth', 'throttle:6,1']);
+Route::put('settings/2fa/disable', [TwoFactorController::class, 'disableTwoFactor'])->name('settings.2fa.disable')->middleware(['auth', 'throttle:6,1']);

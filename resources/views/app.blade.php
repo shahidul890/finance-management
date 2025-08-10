@@ -40,6 +40,8 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="theme-color" content="#ffffff">
+        <link rel="apple-touch-icon" href="{{ asset('logo.png') }}">
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
@@ -49,6 +51,30 @@
         @inertiaHead
     </head>
     <body class="font-sans antialiased">
+        <!-- Add this inside <body> -->
+        <button id="pwa-install-btn" style="display:none; position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 8px; z-index: 1000;">
+        Install App
+        </button>
+
         @inertia
+
+         <script src="{{ asset('pwa-install.js') }}"></script>
+        <script src="{{ asset('sw.js') }}"></script>
+        <script>
+        if ("serviceWorker" in navigator) {
+            // Register a service worker hosted at the root of the
+            // site using the default scope.
+            navigator.serviceWorker.register("/sw.js").then(
+            (registration) => {
+                console.log("Service worker registration succeeded:", registration);
+            },
+            (error) => {
+                console.error(`Service worker registration failed: ${error}`);
+            },
+            );
+        } else {
+            console.error("Service workers are not supported.");
+        }
+        </script>
     </body>
 </html>
