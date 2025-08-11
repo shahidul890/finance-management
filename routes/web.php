@@ -94,19 +94,21 @@ Route::middleware(['auth', 'verified', '2fa'])->group(function () {
     });
 });
 
-Route::get('migration/{key}', function($key) {
+Route::get('migrations/{key}', function($key) {
     if ($key === env('MIGRATION_KEY')) {
         Artisan::call('migrate', ['--force' => true]);
-        return response()->json(['message' => 'Database migration completed successfully.']);
+        echo "Database migrated successfully";
+        return;
     } else {
         abort(403);
     }
 });
 
-Route::get('clear-cache/{key}', function($key) {
+Route::get('clear-caches/{key}', function($key) {
     if ($key === env('MIGRATION_KEY')) {
-        Artisan::call('migrate', ['--force' => true]);
-        return response()->json(['message' => 'Database migration completed successfully.']);
+        Artisan::call('optimize:clear');
+        echo "App optimized successfully.";
+        return;
     } else {
         abort(403);
     }
