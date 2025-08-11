@@ -161,28 +161,28 @@ class IncomeController extends Controller
     {
         $userId = Auth::id();
         
-        $query = Income::forUser($userId);
+        $query = Income::where('incomes.user_id', $userId);
 
         // Filter by date range if provided
         if ($request->has('start_date') && $request->has('end_date')) {
-            $query->dateRange($request->start_date, $request->end_date);
+            $query->whereBetween('incomes.income_date', [$request->start_date, $request->end_date]);
         } else {
             // Default to current month
-            $query->whereMonth('income_date', now()->month)
-                  ->whereYear('income_date', now()->year);
+            $query->whereMonth('incomes.income_date', now()->month)
+                  ->whereYear('incomes.income_date', now()->year);
         }
 
         $stats = [
             'total_amount' => $query->sum('amount'),
             'total_count' => $query->count(),
             'average_amount' => $query->avg('amount'),
-            'recurring_count' => $query->where('is_recurring', true)->count(),
-            'by_category' => $query->join('categories', 'incomes.category_id', '=', 'categories.id')
-                                   ->selectRaw('categories.name, SUM(amount) as total, COUNT(*) as count')
+            'recurring_count' => (clone $query)->where('is_recurring', true)->count(),
+            'by_category' => (clone $query)->join('categories', 'incomes.category_id', '=', 'categories.id')
+                                   ->selectRaw('categories.name, SUM(incomes.amount) as total, COUNT(*) as count')
                                    ->groupBy('categories.id', 'categories.name')
                                    ->orderBy('total', 'desc')
                                    ->get(),
-            'by_source' => $query->selectRaw('source, SUM(amount) as total, COUNT(*) as count')
+            'by_source' => (clone $query)->selectRaw('source, SUM(incomes.amount) as total, COUNT(*) as count')
                                  ->whereNotNull('source')
                                  ->groupBy('source')
                                  ->orderBy('total', 'desc')

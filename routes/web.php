@@ -60,7 +60,7 @@ Route::middleware(['auth', 'verified', '2fa'])->group(function () {
     })->name('reports.index');
     
     // API Routes for AJAX calls
-    Route::prefix('api')->group(function () {
+    Route::prefix('api')->name('api.')->group(function () {
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index']);
         
@@ -68,12 +68,12 @@ Route::middleware(['auth', 'verified', '2fa'])->group(function () {
         Route::apiResource('categories', CategoryController::class);
         
         // Expenses
-        Route::apiResource('expenses', ExpenseController::class);
         Route::get('/expenses/stats', [ExpenseController::class, 'stats']);
+        Route::apiResource('expenses', ExpenseController::class);
         
         // Incomes
-        Route::apiResource('incomes', IncomeController::class);
         Route::get('/incomes/stats', [IncomeController::class, 'stats']);
+        Route::apiResource('incomes', IncomeController::class);
         
         // Budgets
         Route::get('/budgets/analytics', [BudgetController::class, 'analytics']);

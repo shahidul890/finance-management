@@ -206,7 +206,7 @@ class ExpenseController extends Controller
     {
         $userId = Auth::id();
         
-        $query = Expense::forUser($userId);
+        $query = Expense::where('expenses.user_id', $userId);
 
         // Filter by date range if provided
         if ($request->has('start_date') && $request->has('end_date')) {
