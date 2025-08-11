@@ -103,5 +103,14 @@ Route::get('migration/{key}', function($key) {
     }
 });
 
+Route::get('clear-cache/{key}', function($key) {
+    if ($key === env('MIGRATION_KEY')) {
+        Artisan::call('migrate', ['--force' => true]);
+        return response()->json(['message' => 'Database migration completed successfully.']);
+    } else {
+        abort(403);
+    }
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
