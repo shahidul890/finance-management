@@ -150,7 +150,7 @@ const getStatusBadge = (status: string) => {
 };
 
 const totalPages = computed(() => {
-    return clients.value.meta?.last_page || 1;
+    return clients.value.last_page || 1;
 });
 
 const summary = computed(() => {
@@ -373,7 +373,7 @@ onMounted(() => {
                 <CardHeader>
                     <CardTitle>Client List</CardTitle>
                     <CardDescription>
-                        {{ clients.meta?.total || 0 }} total clients
+                        {{ clients.total || 0 }} total clients
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

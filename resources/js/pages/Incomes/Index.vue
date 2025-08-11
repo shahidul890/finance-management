@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, Filter, Edit, Trash2 } from 'lucide-vue-next';
+import { DateRangePicker } from '@/components/ui/daterangepicker';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -39,6 +40,7 @@ const selectedCategory = ref<string>('');
 const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
 const editingIncome = ref<Income | null>(null);
+const dateRange = ref();
 
 // Form data
 const form = ref({
@@ -68,6 +70,11 @@ const loadIncomes = async () => {
         
         if (searchQuery.value) params.search = searchQuery.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
+
+        if(dateRange.value){
+            params.start_date = dateRange.value.start.toISOString().split('T')[0];
+            params.end_date = dateRange.value.end.toISOString().split('T')[0];
+        }
         
         const data = await fetchIncomes(params);
         incomes.value = data;
@@ -201,8 +208,14 @@ const handlePageChange = (page: number) => {
 };
 
 const totalPages = computed(() => {
-    return incomes.value.meta?.last_page || 1;
+    return incomes.value.last_page || 1;
 });
+
+const onDateRangeChange = (range: {start: Date; end: Date}) => {
+    dateRange.value = range;
+    currentPage.value = 1;
+    loadIncomes();
+}
 
 onMounted(() => {
     loadIncomes();
@@ -368,6 +381,9 @@ onMounted(() => {
                                 />
                             </div>
                         </div>
+                        <div class="flex-1">
+                            <DateRangePicker @update:modelValue="onDateRangeChange" />
+                        </div>
                         <div class="sm:w-48">
                             <select 
                                 v-model="selectedCategory" 
@@ -397,7 +413,7 @@ onMounted(() => {
                 <CardHeader>
                     <CardTitle>Income List</CardTitle>
                     <CardDescription>
-                        {{ incomes.meta?.total || 0 }} total incomes
+                        {{ incomes.total || 0 }} total incomes
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

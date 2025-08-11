@@ -8,6 +8,8 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\InvestmentController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -85,7 +87,29 @@ Route::middleware(['auth', 'verified', '2fa'])->group(function () {
         
         // Clients
         Route::apiResource('clients', ClientController::class);
+        
+        // Investments
+        Route::apiResource('investments', InvestmentController::class);
+        Route::get('/investments/stats', [InvestmentController::class, 'stats']);
     });
+});
+
+Route::get('migration/{key}', function($key) {
+    if ($key === env('MIGRATION_KEY')) {
+        Artisan::call('migrate', ['--force' => true]);
+        return response()->json(['message' => 'Database migration completed successfully.']);
+    } else {
+        abort(403);
+    }
+});
+
+Route::get('clear-cache/{key}', function($key) {
+    if ($key === env('MIGRATION_KEY')) {
+        Artisan::call('migrate', ['--force' => true]);
+        return response()->json(['message' => 'Database migration completed successfully.']);
+    } else {
+        abort(403);
+    }
 });
 
 require __DIR__.'/settings.php';

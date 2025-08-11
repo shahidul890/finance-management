@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\InvestmentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -40,5 +41,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // Clients
     Route::apiResource('clients', ClientController::class);
+    
+    // Investments
+    Route::apiResource('investments', InvestmentController::class);
+    Route::get('/investments/stats', [InvestmentController::class, 'stats']);
     
 });

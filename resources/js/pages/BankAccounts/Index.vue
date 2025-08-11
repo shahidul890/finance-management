@@ -179,7 +179,7 @@ const getStatusBadge = (isActive: boolean) => {
 };
 
 const totalPages = computed(() => {
-    return bankAccounts.value.meta?.last_page || 1;
+    return bankAccounts.value.last_page || 1;
 });
 
 const summary = computed(() => {
@@ -411,7 +411,7 @@ onMounted(() => {
                 <CardHeader>
                     <CardTitle>Account List</CardTitle>
                     <CardDescription>
-                        {{ bankAccounts.meta?.total || 0 }} total accounts
+                        {{ bankAccounts.total || 0 }} total accounts
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

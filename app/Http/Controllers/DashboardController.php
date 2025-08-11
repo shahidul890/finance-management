@@ -136,7 +136,7 @@ class DashboardController extends Controller
         $investmentOverview = [
             'dps' => [
                 'count' => $activeDps->count(),
-                'total_amount' => (float) $activeDps->sum('amount'),
+                'total_amount' => (float) $activeDps->sum('total_deposited'),
             ],
             'fdr' => [
                 'count' => $activeFdrs->count(),

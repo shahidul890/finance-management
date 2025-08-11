@@ -20,6 +20,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const { 
     fetchInvestments, 
+    createInvestment,
+    updateInvestment,
+    deleteInvestment,
     fetchBankAccounts,
     loading, 
     formatCurrency 
@@ -37,14 +40,38 @@ const editingInvestment = ref<Investment | null>(null);
 // Form data
 const form = ref({
     type: 'dps',
-    title: '',
-    description: '',
-    amount: '',
+    // DPS fields
+    dps_name: '',
+    dps_number: '',
+    monthly_installment: '',
+    tenure_months: '',
     interest_rate: '',
     start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
+    maturity_date: '',
+    
+    // FDR fields
+    fdr_name: '',
+    fdr_number: '',
+    principal_amount: '', // Used for FDR
+    fdr_tenure_months: '',
+    fdr_interest_rate: '',
+    fdr_start_date: new Date().toISOString().split('T')[0],
+    fdr_maturity_date: '',
+    
+    // Loan fields
+    loan_name: '',
+    loan_number: '',
+    loan_type: '',
+    loan_principal_amount: '', // Different from FDR principal_amount - will map to principal_amount for loan
+    loan_tenure_months: '',
+    loan_interest_rate: '',
+    loan_start_date: new Date().toISOString().split('T')[0],
+    monthly_emi: '',
+    
+    // Common fields
     bank_account_id: '',
     status: 'active',
+    additional_info: '',
 });
 
 // Pagination
@@ -72,7 +99,7 @@ const loadInvestments = async () => {
 const loadBankAccounts = async () => {
     try {
         const result = await fetchBankAccounts();
-        bankAccounts.value = result.data;
+        bankAccounts.value = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
     } catch (err) {
         console.error('Failed to load bank accounts:', err);
     }
@@ -81,41 +108,137 @@ const loadBankAccounts = async () => {
 const resetForm = () => {
     form.value = {
         type: 'dps',
-        title: '',
-        description: '',
-        amount: '',
+        // DPS fields
+        dps_name: '',
+        dps_number: '',
+        monthly_installment: '',
+        tenure_months: '',
         interest_rate: '',
         start_date: new Date().toISOString().split('T')[0],
-        end_date: '',
+        maturity_date: '',
+        
+        // FDR fields
+        fdr_name: '',
+        fdr_number: '',
+        principal_amount: '',
+        fdr_tenure_months: '',
+        fdr_interest_rate: '',
+        fdr_start_date: new Date().toISOString().split('T')[0],
+        fdr_maturity_date: '',
+        
+        // Loan fields
+        loan_name: '',
+        loan_number: '',
+        loan_type: '',
+        loan_principal_amount: '',
+        loan_tenure_months: '',
+        loan_interest_rate: '',
+        loan_start_date: new Date().toISOString().split('T')[0],
+        monthly_emi: '',
+        
+        // Common fields
         bank_account_id: '',
         status: 'active',
+        additional_info: '',
     };
+};
+
+const prepareFormData = () => {
+    const data: any = {
+        type: form.value.type,
+        bank_account_id: form.value.bank_account_id || null,
+        status: form.value.status,
+        additional_info: form.value.additional_info ? { notes: form.value.additional_info } : null,
+    };
+
+    if (form.value.type === 'dps') {
+        Object.assign(data, {
+            dps_name: form.value.dps_name,
+            dps_number: form.value.dps_number,
+            monthly_installment: parseFloat(form.value.monthly_installment) || 0,
+            tenure_months: parseInt(form.value.tenure_months) || 0,
+            interest_rate: parseFloat(form.value.interest_rate) || 0,
+            start_date: form.value.start_date,
+            maturity_date: form.value.maturity_date || null,
+        });
+    } else if (form.value.type === 'fdr') {
+        Object.assign(data, {
+            fdr_name: form.value.fdr_name,
+            fdr_number: form.value.fdr_number,
+            principal_amount: parseFloat(form.value.principal_amount) || 0,
+            fdr_tenure_months: parseInt(form.value.fdr_tenure_months) || 0,
+            fdr_interest_rate: parseFloat(form.value.fdr_interest_rate) || 0,
+            fdr_start_date: form.value.fdr_start_date,
+            fdr_maturity_date: form.value.fdr_maturity_date || null,
+        });
+    } else if (form.value.type === 'loan') {
+        Object.assign(data, {
+            loan_name: form.value.loan_name,
+            loan_number: form.value.loan_number,
+            loan_type: form.value.loan_type,
+            principal_amount: parseFloat(form.value.loan_principal_amount) || 0,
+            loan_tenure_months: parseInt(form.value.loan_tenure_months) || 0,
+            loan_interest_rate: parseFloat(form.value.loan_interest_rate) || 0,
+            loan_start_date: form.value.loan_start_date,
+            monthly_emi: parseFloat(form.value.monthly_emi) || 0,
+        });
+    }
+
+    return data;
 };
 
 const handleCreate = async () => {
     try {
-        console.log('Creating investment with form data:', form.value);
-        // For now, just show success message since API endpoints will be created
+        const formData = prepareFormData();
+        await createInvestment(formData);
         showCreateDialog.value = false;
         resetForm();
+        await loadInvestments();
         console.log('Investment created successfully');
-    } catch {
-        console.error('Failed to create investment');
+    } catch (error) {
+        console.error('Failed to create investment:', error);
     }
 };
 
 const handleEdit = (investment: Investment) => {
     editingInvestment.value = investment;
+    // Extract the proper form data based on investment type
+    const details = investment.details || investment;
+
     form.value = {
-        type: investment.type,
-        title: investment.title,
-        description: investment.description || '',
-        amount: investment.amount.toString(),
-        interest_rate: investment.interest_rate.toString(),
-        start_date: investment.start_date,
-        end_date: investment.end_date || '',
-        bank_account_id: investment.bank_account_id?.toString() || '',
-        status: investment.status,
+        type: investment.type || investment.type,
+        // DPS fields
+        dps_name: details.dps_name || '',
+        dps_number: details.dps_number || '',
+        monthly_installment: details.monthly_installment?.toString() || '',
+        tenure_months: details.tenure_months?.toString() || '',
+        interest_rate: details.interest_rate?.toString() || '',
+        start_date: details.start_date || '',
+        maturity_date: details.maturity_date || '',
+        
+        // FDR fields
+        fdr_name: details.fdr_name || '',
+        fdr_number: details.fdr_number || '',
+        principal_amount: details.principal_amount?.toString() || '',
+        fdr_tenure_months: details.tenure_months?.toString() || '',
+        fdr_interest_rate: details.interest_rate?.toString() || '',
+        fdr_start_date: details.start_date || '',
+        fdr_maturity_date: details.maturity_date || '',
+        
+        // Loan fields
+        loan_name: details.loan_name || '',
+        loan_number: details.loan_number || '',
+        loan_type: details.loan_type || '',
+        loan_principal_amount: details.principal_amount?.toString() || '',
+        loan_tenure_months: details.tenure_months?.toString() || '',
+        loan_interest_rate: details.interest_rate?.toString() || '',
+        loan_start_date: details.start_date || '',
+        monthly_emi: details.monthly_emi?.toString() || '',
+        
+        // Common fields
+        bank_account_id: details.bank_account_id?.toString() || '',
+        status: details.status || 'active',
+        additional_info: details.additional_info || '',
     };
     showEditDialog.value = true;
 };
@@ -124,14 +247,15 @@ const handleUpdate = async () => {
     if (!editingInvestment.value) return;
     
     try {
-        console.log('Updating investment with form data:', form.value);
-        // For now, just show success message since API endpoints will be created
+        const formData = prepareFormData();
+        await updateInvestment(editingInvestment.value.id, formData);
         showEditDialog.value = false;
         editingInvestment.value = null;
         resetForm();
+        await loadInvestments();
         console.log('Investment updated successfully');
-    } catch {
-        console.error('Failed to update investment');
+    } catch (error) {
+        console.error('Failed to update investment:', error);
     }
 };
 
@@ -139,11 +263,11 @@ const handleDelete = async (investment: Investment) => {
     if (!confirm('Are you sure you want to delete this investment?')) return;
     
     try {
-        console.log('Deleting investment:', investment.id);
-        // For now, just show success message since API endpoints will be created
+        await deleteInvestment(investment.id);
+        await loadInvestments();
         console.log('Investment deleted successfully');
-    } catch {
-        console.error('Failed to delete investment');
+    } catch (error) {
+        console.error('Failed to delete investment:', error);
     }
 };
 
@@ -203,7 +327,7 @@ const summary = computed(() => {
         total_investments: investmentList.length,
         total_amount: investmentList.reduce((sum, investment) => sum + investment.amount, 0),
         active_investments: investmentList.filter(investment => investment.status === 'active').length,
-        investment_types: new Set(investmentList.map(investment => investment.type)).size,
+        investment_types: new Set(investmentList.map(investment => investment.type || investment.type)).size,
     };
 });
 
@@ -227,7 +351,7 @@ onMounted(() => {
                 
                 <Dialog v-model:open="showCreateDialog">
                     <DialogTrigger as-child>
-                        <Button>
+                        <Button @click="resetForm">
                             <Plus class="h-4 w-4 mr-2" />
                             Add Investment
                         </Button>
@@ -253,50 +377,213 @@ onMounted(() => {
                                         <option value="loan">Loan</option>
                                     </select>
                                 </div>
-                                <div class="grid gap-2">
-                                    <Label for="title">Title</Label>
-                                    <Input 
-                                        id="title" 
-                                        v-model="form.title" 
-                                        placeholder="Enter investment title"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label for="amount">Amount</Label>
-                                    <Input 
-                                        id="amount" 
-                                        v-model="form.amount" 
-                                        type="number" 
-                                        step="0.01"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label for="interest_rate">Interest Rate (%)</Label>
-                                    <Input 
-                                        id="interest_rate" 
-                                        v-model="form.interest_rate" 
-                                        type="number" 
-                                        step="0.01"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label for="start_date">Start Date</Label>
-                                    <Input 
-                                        id="start_date" 
-                                        v-model="form.start_date" 
-                                        type="date"
-                                    />
-                                </div>
-                                <div class="grid gap-2">
-                                    <Label for="end_date">End Date (Optional)</Label>
-                                    <Input 
-                                        id="end_date" 
-                                        v-model="form.end_date" 
-                                        type="date"
-                                    />
-                                </div>
+                                
+                                <!-- DPS Fields -->
+                                <template v-if="form.type === 'dps'">
+                                    <div class="grid gap-2">
+                                        <Label for="dps_name">DPS Name</Label>
+                                        <Input 
+                                            id="dps_name" 
+                                            v-model="form.dps_name" 
+                                            placeholder="Enter DPS name"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="dps_number">DPS Number (Optional)</Label>
+                                        <Input 
+                                            id="dps_number" 
+                                            v-model="form.dps_number" 
+                                            placeholder="Enter DPS number"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="monthly_installment">Monthly Installment</Label>
+                                        <Input 
+                                            id="monthly_installment" 
+                                            v-model="form.monthly_installment" 
+                                            type="number" 
+                                            step="0.01"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="tenure_months">Tenure (Months)</Label>
+                                        <Input 
+                                            id="tenure_months" 
+                                            v-model="form.tenure_months" 
+                                            type="number"
+                                            placeholder="24"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="interest_rate">Interest Rate (%)</Label>
+                                        <Input 
+                                            id="interest_rate" 
+                                            v-model="form.interest_rate" 
+                                            type="number" 
+                                            step="0.01"
+                                            placeholder="8.5"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="start_date">Start Date</Label>
+                                        <Input 
+                                            id="start_date" 
+                                            v-model="form.start_date" 
+                                            type="date"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="maturity_date">Maturity Date (Optional)</Label>
+                                        <Input 
+                                            id="maturity_date" 
+                                            v-model="form.maturity_date" 
+                                            type="date"
+                                        />
+                                    </div>
+                                </template>
+
+                                <!-- FDR Fields -->
+                                <template v-if="form.type === 'fdr'">
+                                    <div class="grid gap-2">
+                                        <Label for="fdr_name">FDR Name</Label>
+                                        <Input 
+                                            id="fdr_name" 
+                                            v-model="form.fdr_name" 
+                                            placeholder="Enter FDR name"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="fdr_number">FDR Number (Optional)</Label>
+                                        <Input 
+                                            id="fdr_number" 
+                                            v-model="form.fdr_number" 
+                                            placeholder="Enter FDR number"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="principal_amount">Principal Amount</Label>
+                                        <Input 
+                                            id="principal_amount" 
+                                            v-model="form.principal_amount" 
+                                            type="number" 
+                                            step="0.01"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="fdr_tenure_months">Tenure (Months)</Label>
+                                        <Input 
+                                            id="fdr_tenure_months" 
+                                            v-model="form.fdr_tenure_months" 
+                                            type="number"
+                                            placeholder="12"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="fdr_interest_rate">Interest Rate (%)</Label>
+                                        <Input 
+                                            id="fdr_interest_rate" 
+                                            v-model="form.fdr_interest_rate" 
+                                            type="number" 
+                                            step="0.01"
+                                            placeholder="7.5"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="fdr_start_date">Start Date</Label>
+                                        <Input 
+                                            id="fdr_start_date" 
+                                            v-model="form.fdr_start_date" 
+                                            type="date"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="fdr_maturity_date">Maturity Date (Optional)</Label>
+                                        <Input 
+                                            id="fdr_maturity_date" 
+                                            v-model="form.fdr_maturity_date" 
+                                            type="date"
+                                        />
+                                    </div>
+                                </template>
+
+                                <!-- Loan Fields -->
+                                <template v-if="form.type === 'loan'">
+                                    <div class="grid gap-2">
+                                        <Label for="loan_name">Loan Name</Label>
+                                        <Input 
+                                            id="loan_name" 
+                                            v-model="form.loan_name" 
+                                            placeholder="Enter loan name"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="loan_number">Loan Number (Optional)</Label>
+                                        <Input 
+                                            id="loan_number" 
+                                            v-model="form.loan_number" 
+                                            placeholder="Enter loan number"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="loan_type">Loan Type</Label>
+                                        <Input 
+                                            id="loan_type" 
+                                            v-model="form.loan_type" 
+                                            placeholder="e.g., Personal, Home, Car"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="loan_principal_amount">Principal Amount</Label>
+                                        <Input 
+                                            id="loan_principal_amount" 
+                                            v-model="form.loan_principal_amount" 
+                                            type="number" 
+                                            step="0.01"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="loan_tenure_months">Tenure (Months)</Label>
+                                        <Input 
+                                            id="loan_tenure_months" 
+                                            v-model="form.loan_tenure_months" 
+                                            type="number"
+                                            placeholder="60"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="loan_interest_rate">Interest Rate (%)</Label>
+                                        <Input 
+                                            id="loan_interest_rate" 
+                                            v-model="form.loan_interest_rate" 
+                                            type="number" 
+                                            step="0.01"
+                                            placeholder="12.5"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="loan_start_date">Start Date</Label>
+                                        <Input 
+                                            id="loan_start_date" 
+                                            v-model="form.loan_start_date" 
+                                            type="date"
+                                        />
+                                    </div>
+                                    <div class="grid gap-2">
+                                        <Label for="monthly_emi">Monthly EMI</Label>
+                                        <Input 
+                                            id="monthly_emi" 
+                                            v-model="form.monthly_emi" 
+                                            type="number" 
+                                            step="0.01"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                </template>
+
+                                <!-- Common Fields -->
                                 <div class="grid gap-2">
                                     <Label for="bank_account_id">Bank Account (Optional)</Label>
                                     <select 
@@ -327,11 +614,11 @@ onMounted(() => {
                                     </select>
                                 </div>
                                 <div class="grid gap-2">
-                                    <Label for="description">Description</Label>
+                                    <Label for="additional_info">Additional Information (Optional)</Label>
                                     <textarea 
-                                        id="description" 
-                                        v-model="form.description" 
-                                        placeholder="Optional description"
+                                        id="additional_info" 
+                                        v-model="form.additional_info" 
+                                        placeholder="Optional notes or description"
                                         class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     ></textarea>
                                 </div>
@@ -488,52 +775,52 @@ onMounted(() => {
                                     <td class="p-4 align-middle">
                                         <div>
                                             <div class="font-medium">{{ investment.title }}</div>
-                                            <div v-if="investment.description" class="text-sm text-muted-foreground">
-                                                {{ investment.description }}
+                                            <div v-if="investment.details?.additional_info" class="text-sm text-muted-foreground">
+                                                {{ investment.details.additional_info }}
                                             </div>
                                         </div>
                                     </td>
                                     <td class="p-4 align-middle">
                                         <div class="flex items-center gap-2">
                                             <component 
-                                                :is="getInvestmentTypeIcon(investment.type)" 
-                                                :class="getInvestmentTypeColor(investment.type)"
+                                                :is="getInvestmentTypeIcon(investment.type || investment.type)" 
+                                                :class="getInvestmentTypeColor(investment.type || investment.type)"
                                                 class="h-4 w-4"
                                             />
-                                            <span class="font-medium">{{ investment.type.toUpperCase() }}</span>
+                                            <span class="font-medium">{{ (investment.type || investment.type).toUpperCase() }}</span>
                                         </div>
                                         <div class="text-sm text-muted-foreground">
-                                            {{ getInvestmentTypeName(investment.type) }}
+                                            {{ getInvestmentTypeName(investment.type || investment.type) }}
                                         </div>
                                     </td>
                                     <td class="p-4 align-middle font-semibold">
                                         {{ formatCurrency(investment.amount) }}
                                     </td>
                                     <td class="p-4 align-middle">
-                                        <span class="font-medium">{{ investment.interest_rate }}%</span>
+                                        <span class="font-medium">{{ investment.details?.interest_rate || 0 }}%</span>
                                     </td>
                                     <td class="p-4 align-middle">
                                         <div class="text-sm">
-                                            <div class="font-medium">{{ new Date(investment.start_date).toLocaleDateString() }}</div>
-                                            <div v-if="investment.end_date" class="text-muted-foreground">
-                                                to {{ new Date(investment.end_date).toLocaleDateString() }}
+                                            <div class="font-medium">{{ new Date(investment.details?.start_date || investment.created_at).toLocaleDateString() }}</div>
+                                            <div v-if="investment.details?.maturity_date || investment.details?.end_date" class="text-muted-foreground">
+                                                to {{ new Date(investment.details.maturity_date || investment.details.end_date).toLocaleDateString() }}
                                             </div>
                                             <div v-else class="text-muted-foreground">No end date</div>
                                         </div>
                                     </td>
                                     <td class="p-4 align-middle">
                                         <div v-if="investment.bank_account">
-                                            <div class="font-medium">{{ investment.bank_account.account_name }}</div>
+                                            <div class="font-medium">{{ investment.bank_account.account_number }}</div>
                                             <div class="text-sm text-muted-foreground">{{ investment.bank_account.bank_name }}</div>
                                         </div>
                                         <span v-else class="text-muted-foreground">No account</span>
                                     </td>
                                     <td class="p-4 align-middle">
                                         <span 
-                                            :class="getStatusBadge(investment.status).color"
+                                            :class="getStatusBadge(investment.details.status).color"
                                             class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent"
                                         >
-                                            {{ getStatusBadge(investment.status).text }}
+                                            {{ getStatusBadge(investment.details.status).text }}
                                         </span>
                                     </td>
                                     <td class="p-4 align-middle">
@@ -598,52 +885,215 @@ onMounted(() => {
                                 <option value="loan">Loan</option>
                             </select>
                         </div>
+                        
+                        <!-- DPS Fields -->
+                        <template v-if="form.type === 'dps'">
+                            <div class="grid gap-2">
+                                <Label for="edit-dps_name">DPS Name</Label>
+                                <Input 
+                                    id="edit-dps_name" 
+                                    v-model="form.dps_name" 
+                                    placeholder="Enter DPS name"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-dps_number">DPS Number (Optional)</Label>
+                                <Input 
+                                    id="edit-dps_number" 
+                                    v-model="form.dps_number" 
+                                    placeholder="Enter DPS number"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-monthly_installment">Monthly Installment</Label>
+                                <Input 
+                                    id="edit-monthly_installment" 
+                                    v-model="form.monthly_installment" 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-tenure_months">Tenure (Months)</Label>
+                                <Input 
+                                    id="edit-tenure_months" 
+                                    v-model="form.tenure_months" 
+                                    type="number"
+                                    placeholder="24"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-interest_rate">Interest Rate (%)</Label>
+                                <Input 
+                                    id="edit-interest_rate" 
+                                    v-model="form.interest_rate" 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="8.5"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-start_date">Start Date</Label>
+                                <Input 
+                                    id="edit-start_date" 
+                                    v-model="form.start_date" 
+                                    type="date"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-maturity_date">Maturity Date (Optional)</Label>
+                                <Input 
+                                    id="edit-maturity_date" 
+                                    v-model="form.maturity_date" 
+                                    type="date"
+                                />
+                            </div>
+                        </template>
+
+                        <!-- FDR Fields -->
+                        <template v-if="form.type === 'fdr'">
+                            <div class="grid gap-2">
+                                <Label for="edit-fdr_name">FDR Name</Label>
+                                <Input 
+                                    id="edit-fdr_name" 
+                                    v-model="form.fdr_name" 
+                                    placeholder="Enter FDR name"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-fdr_number">FDR Number (Optional)</Label>
+                                <Input 
+                                    id="edit-fdr_number" 
+                                    v-model="form.fdr_number" 
+                                    placeholder="Enter FDR number"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-principal_amount">Principal Amount</Label>
+                                <Input 
+                                    id="edit-principal_amount" 
+                                    v-model="form.principal_amount" 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-fdr_tenure_months">Tenure (Months)</Label>
+                                <Input 
+                                    id="edit-fdr_tenure_months" 
+                                    v-model="form.fdr_tenure_months" 
+                                    type="number"
+                                    placeholder="12"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-fdr_interest_rate">Interest Rate (%)</Label>
+                                <Input 
+                                    id="edit-fdr_interest_rate" 
+                                    v-model="form.fdr_interest_rate" 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="7.5"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-fdr_start_date">Start Date</Label>
+                                <Input 
+                                    id="edit-fdr_start_date" 
+                                    v-model="form.fdr_start_date" 
+                                    type="date"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-fdr_maturity_date">Maturity Date (Optional)</Label>
+                                <Input 
+                                    id="edit-fdr_maturity_date" 
+                                    v-model="form.fdr_maturity_date" 
+                                    type="date"
+                                />
+                            </div>
+                        </template>
+
+                        <!-- Loan Fields -->
+                        <template v-if="form.type === 'loan'">
+                            <div class="grid gap-2">
+                                <Label for="edit-loan_name">Loan Name</Label>
+                                <Input 
+                                    id="edit-loan_name" 
+                                    v-model="form.loan_name" 
+                                    placeholder="Enter loan name"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-loan_number">Loan Number (Optional)</Label>
+                                <Input 
+                                    id="edit-loan_number" 
+                                    v-model="form.loan_number" 
+                                    placeholder="Enter loan number"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-loan_type">Loan Type</Label>
+                                <Input 
+                                    id="edit-loan_type" 
+                                    v-model="form.loan_type" 
+                                    placeholder="e.g., Personal, Home, Car"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-loan_principal_amount">Principal Amount</Label>
+                                <Input 
+                                    id="edit-loan_principal_amount" 
+                                    v-model="form.loan_principal_amount" 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-loan_tenure_months">Tenure (Months)</Label>
+                                <Input 
+                                    id="edit-loan_tenure_months" 
+                                    v-model="form.loan_tenure_months" 
+                                    type="number"
+                                    placeholder="60"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-loan_interest_rate">Interest Rate (%)</Label>
+                                <Input 
+                                    id="edit-loan_interest_rate" 
+                                    v-model="form.loan_interest_rate" 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="12.5"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-loan_start_date">Start Date</Label>
+                                <Input 
+                                    id="edit-loan_start_date" 
+                                    v-model="form.loan_start_date" 
+                                    type="date"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="edit-monthly_emi">Monthly EMI</Label>
+                                <Input 
+                                    id="edit-monthly_emi" 
+                                    v-model="form.monthly_emi" 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </template>
+
+                        <!-- Common Fields -->
                         <div class="grid gap-2">
-                            <Label for="edit-title">Title</Label>
-                            <Input 
-                                id="edit-title" 
-                                v-model="form.title" 
-                                placeholder="Investment title"
-                            />
-                        </div>
-                        <div class="grid gap-2">
-                            <Label for="edit-amount">Amount</Label>
-                            <Input 
-                                id="edit-amount" 
-                                v-model="form.amount" 
-                                type="number" 
-                                step="0.01"
-                                placeholder="0.00"
-                            />
-                        </div>
-                        <div class="grid gap-2">
-                            <Label for="edit-interest_rate">Interest Rate (%)</Label>
-                            <Input 
-                                id="edit-interest_rate" 
-                                v-model="form.interest_rate" 
-                                type="number" 
-                                step="0.01"
-                                placeholder="0.00"
-                            />
-                        </div>
-                        <div class="grid gap-2">
-                            <Label for="edit-start_date">Start Date</Label>
-                            <Input 
-                                id="edit-start_date" 
-                                v-model="form.start_date" 
-                                type="date"
-                            />
-                        </div>
-                        <div class="grid gap-2">
-                            <Label for="edit-end_date">End Date</Label>
-                            <Input 
-                                id="edit-end_date" 
-                                v-model="form.end_date" 
-                                type="date"
-                            />
-                        </div>
-                        <div class="grid gap-2">
-                            <Label for="edit-bank_account_id">Bank Account</Label>
+                            <Label for="edit-bank_account_id">Bank Account (Optional)</Label>
                             <select 
                                 id="edit-bank_account_id" 
                                 v-model="form.bank_account_id"
@@ -672,11 +1122,11 @@ onMounted(() => {
                             </select>
                         </div>
                         <div class="grid gap-2">
-                            <Label for="edit-description">Description</Label>
+                            <Label for="edit-additional_info">Additional Information (Optional)</Label>
                             <textarea 
-                                id="edit-description" 
-                                v-model="form.description" 
-                                placeholder="Optional description"
+                                id="edit-additional_info" 
+                                v-model="form.additional_info" 
+                                placeholder="Optional notes or description"
                                 class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             ></textarea>
                         </div>
