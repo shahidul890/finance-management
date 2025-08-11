@@ -18,8 +18,10 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, iconv, json, mbstring, pdo
           tools: composer:v2
+          coverage: none
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -93,7 +95,7 @@ jobs:
 
       - name: Run Migrations
         run: |
-          curl -X GET "${{secrets.APP_URL}}/run-migrations/${{ secrets.MIGRATION_KEY }}"
+          curl -X GET "${{secrets.APP_URL}}/migrations/${{ secrets.MIGRATION_KEY }}"
 
       - name: Clear Laravel Caches
         run: |
