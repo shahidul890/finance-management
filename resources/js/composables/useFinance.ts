@@ -110,6 +110,9 @@ export interface BankAccount {
 
 export interface Investment {
     id: number;
+    user_id: number;
+    schema_type: 'dps' | 'fdr' | 'loan';
+    schema_id: number;
     type: 'dps' | 'fdr' | 'loan';
     title: string;
     description?: string;
@@ -120,7 +123,7 @@ export interface Investment {
     bank_account_id?: number;
     bank_account?: BankAccount;
     status: 'active' | 'matured' | 'closed';
-    user_id: number;
+    details?: any;
     created_at: string;
     updated_at: string;
 }
@@ -517,6 +520,26 @@ export function useFinance() {
         return apiCall(url);
     }
 
+    async function createInvestment(data: any): Promise<{ investment: Investment; message: string }> {
+        return apiCall<{ investment: Investment; message: string }>('/api/investments', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async function updateInvestment(id: number, data: Partial<Investment>): Promise<{ investment: Investment; message: string }> {
+        return apiCall<{ investment: Investment; message: string }>(`/api/investments/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async function deleteInvestment(id: number): Promise<{ message: string }> {
+        return apiCall<{ message: string }>(`/api/investments/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
     // Utilities
     function formatCurrency(amount: number): string {
         return new Intl.NumberFormat('en-US', {
@@ -606,6 +629,9 @@ export function useFinance() {
         
         // Investments
         fetchInvestments,
+        createInvestment,
+        updateInvestment,
+        deleteInvestment,
         
         // Clients
         fetchClients,

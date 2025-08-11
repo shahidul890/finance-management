@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, Filter, Edit, Trash2 } from 'lucide-vue-next';
+import { DateRangePicker } from '@/components/ui/daterangepicker';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,7 +31,7 @@ const {
     formatCurrency 
 } = useFinance();
 
-const expenses = ref<{ data: Expense[]; meta: any; links: any }>({ data: [], meta: {}, links: {} });
+const expenses = ref<{ data: Expense[]; last_page: any; links: any }>({ data: [], last_page: {}, links: {} });
 const categories = ref<Category[]>([]);
 const bankAccounts = ref<BankAccount[]>([]);
 const investments = ref<Investment[]>([]);
@@ -40,6 +41,7 @@ const selectedExpenseType = ref<string>('');
 const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
 const editingExpense = ref<Expense | null>(null);
+const dateRange = ref<{ start: Date; end: Date } | null>(null);
 
 // Form data
 const form = ref({
@@ -70,7 +72,11 @@ const loadExpenses = async () => {
         if (searchQuery.value) params.search = searchQuery.value;
         if (selectedCategory.value) params.category_id = selectedCategory.value;
         if (selectedExpenseType.value) params.expense_type = selectedExpenseType.value;
-        
+        if(dateRange.value){
+            params.start_date = dateRange.value.start.toISOString().split('T')[0];
+            params.end_date = dateRange.value.end.toISOString().split('T')[0];
+        }
+
         expenses.value = await fetchExpenses(params);
     } catch (err) {
         console.error('Failed to load expenses:', err);
@@ -202,7 +208,7 @@ const handlePageChange = (page: number) => {
 };
 
 const totalPages = computed(() => {
-    return expenses.value.meta?.last_page || 1;
+    return expenses.value.last_page || 1;
 });
 
 const getFilteredInvestments = () => {
@@ -233,6 +239,11 @@ const getExpenseTypeBadge = (expenseType: string) => {
         case 'loan_payment': return { text: 'Loan', color: 'text-orange-600 bg-orange-100' };
         default: return { text: 'Regular', color: 'text-gray-600 bg-gray-100' };
     }
+};
+
+const onDateRangeChange = (range: { start: Date; end: Date } | null) => {
+    dateRange.value = range;
+    loadExpenses();
 };
 
 onMounted(() => {
@@ -340,7 +351,7 @@ onMounted(() => {
                                         <option 
                                             v-for="investment in getFilteredInvestments()" 
                                             :key="investment.id"
-                                            :value="investment.id.toString()"
+                                            :value="investment.details?.id.toString()"
                                         >
                                             {{ investment.title }} ({{ investment.type.toUpperCase() }})
                                         </option>
@@ -359,7 +370,7 @@ onMounted(() => {
                                             :key="account.id"
                                             :value="account.id.toString()"
                                         >
-                                            {{ account.account_name }} - {{ account.bank_name }}
+                                            {{ account.account_number }} - {{ account.bank_name }}
                                         </option>
                                     </select>
                                 </div>
@@ -414,6 +425,9 @@ onMounted(() => {
                                 />
                             </div>
                         </div>
+                        <div class="flex-1">
+                            <DateRangePicker @update:modelValue="onDateRangeChange" />
+                        </div>
                         <div class="sm:w-48">
                             <select 
                                 v-model="selectedCategory" 
@@ -456,7 +470,7 @@ onMounted(() => {
                 <CardHeader>
                     <CardTitle>Expense List</CardTitle>
                     <CardDescription>
-                        {{ expenses.meta?.total || 0 }} total expenses
+                        {{ expenses.total || 0 }} total expenses
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -657,7 +671,7 @@ onMounted(() => {
                                 <option 
                                     v-for="investment in getFilteredInvestments()" 
                                     :key="investment.id"
-                                    :value="investment.id.toString()"
+                                    :value="investment.details?.id.toString()"
                                 >
                                     {{ investment.title }} ({{ investment.type.toUpperCase() }})
                                 </option>
@@ -676,7 +690,7 @@ onMounted(() => {
                                     :key="account.id"
                                     :value="account.id.toString()"
                                 >
-                                    {{ account.account_name }} - {{ account.bank_name }}
+                                    {{ account.account_number }} - {{ account.bank_name }}
                                 </option>
                             </select>
                         </div>

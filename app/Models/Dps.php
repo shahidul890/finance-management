@@ -35,10 +35,10 @@ class Dps extends Model
         'interest_rate' => 'decimal:2',
         'total_deposited' => 'decimal:2',
         'maturity_amount' => 'decimal:2',
-        'start_date' => 'date',
-        'maturity_date' => 'date',
-        'last_payment_date' => 'date',
-        'next_payment_date' => 'date',
+        'start_date' => 'date:Y-m-d',
+        'maturity_date' => 'date:Y-m-d',
+        'last_payment_date' => 'date:Y-m-d',
+        'next_payment_date' => 'date:Y-m-d',
         'auto_debit' => 'boolean',
         'additional_info' => 'array',
     ];
@@ -74,5 +74,10 @@ class Dps extends Model
     public function getDaysToMaturityAttribute(): int
     {
         return Carbon::now()->diffInDays($this->maturity_date, false);
+    }
+
+    public function investments()
+    {
+        return $this->morphMany(Investment::class, 'investable', 'schema_type', 'schema_id');
     }
 }
