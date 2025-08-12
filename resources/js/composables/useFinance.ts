@@ -151,6 +151,11 @@ export interface DashboardData {
         color: string;
         total: number;
     }>;
+    top_expense_in_parent_categories: Array<{
+        name: string;
+        color: string;
+        total: number;
+    }>;
     top_income_categories: Array<{
         name: string;
         color: string;
@@ -161,8 +166,8 @@ export interface DashboardData {
         incomes: Income[];
     };
     budget_analysis?: {
-        current_month_expenses: number;
-        previous_month_expenses: number;
+        current_month_budget: number;
+        previous_month_budget: number;
         difference: number;
         percentage_change: number;
     };

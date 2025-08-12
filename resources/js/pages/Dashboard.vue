@@ -198,30 +198,60 @@ const getCurrentPeriodText = () => {
                     </Card>
                 </div>
 
-                <!-- Budget Analysis -->
-                <Card v-if="selectedPeriod === 'month' && dashboardData.budget_analysis">
-                    <CardHeader>
-                        <CardTitle>Budget Analysis</CardTitle>
-                        <CardDescription>Comparison with previous month</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="flex items-center space-x-4">
-                            <div>
-                                <p class="text-sm text-muted-foreground">Previous Month</p>
-                                <p class="text-lg font-semibold">
-                                    {{ formatCurrency(dashboardData.budget_analysis.previous_month_expenses) }}
-                                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Top Expense Parent Categories -->
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Top Expense Parent Categories</CardTitle>
+                            <CardDescription>Your biggest spending areas</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-3">
+                                <div 
+                                    v-for="category in dashboardData.top_expense_in_parent_categories.slice(0, 5)"
+                                    :key="category.name"
+                                    class="flex items-center justify-between"
+                                >
+                                    <div class="flex items-center space-x-3">
+                                        <div 
+                                            class="w-3 h-3 rounded-full" 
+                                            :style="{ backgroundColor: category.color }"
+                                        ></div>
+                                        <span class="text-sm font-medium">{{ category.name }}</span>
+                                    </div>
+                                    <span class="text-sm font-semibold text-red-600">
+                                        {{ formatCurrency(category.total) }}
+                                    </span>
+                                </div>
                             </div>
-                            <div class="flex-1">
-                                <p class="text-sm text-muted-foreground">Difference</p>
-                                <p class="text-lg font-semibold" :class="getPercentageColor(dashboardData.budget_analysis.percentage_change)">
-                                    {{ dashboardData.budget_analysis.percentage_change >= 0 ? '+' : '' }}{{ dashboardData.budget_analysis.percentage_change }}%
-                                    ({{ formatCurrency(dashboardData.budget_analysis.difference) }})
-                                </p>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Budget Analysis -->
+                    <Card v-if="selectedPeriod === 'month' && dashboardData.budget_analysis">
+                        <CardHeader>
+                            <CardTitle>Budget Analysis</CardTitle>
+                            <CardDescription>Comparison with previous month</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex items-center space-x-4">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Previous Month</p>
+                                    <p class="text-lg font-semibold">
+                                        {{ formatCurrency(dashboardData.budget_analysis.previous_month_budget) }}
+                                    </p>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-muted-foreground">Difference</p>
+                                    <p class="text-lg font-semibold" :class="getPercentageColor(dashboardData.budget_analysis.percentage_change)">
+                                        {{ dashboardData.budget_analysis.percentage_change >= 0 ? '+' : '' }}{{ dashboardData.budget_analysis.percentage_change }}%
+                                        ({{ formatCurrency(dashboardData.budget_analysis.difference) }})
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <!-- Top Categories -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

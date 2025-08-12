@@ -88,7 +88,7 @@ class DashboardController extends Controller
             ->whereColumn('expenses.user_id', '=', $userId)
             ->groupBy('categories.id', 'categories.name', 'categories.color')
             ->orderBy('total', 'desc')
-            ->limit(5)
+            ->limit(10)
             ->get();
 
         // Top income sources
@@ -98,20 +98,20 @@ class DashboardController extends Controller
             ->whereColumn('incomes.user_id', '=', $userId)
             ->groupBy('categories.id', 'categories.name', 'categories.color')
             ->orderBy('total', 'desc')
-            ->limit(5)
+            ->limit(10)
             ->get();
 
         // Recent transactions
         $recentExpenses = Expense::with('category')
             ->whereUserId($userId)
             ->orderBy('expense_date', 'desc')
-            ->limit(5)
+            ->limit(10)
             ->get();
             
         $recentIncomes = Income::whereUserId($userId)
             ->with('category')
             ->orderBy('income_date', 'desc')
-            ->limit(5)
+            ->limit(10)
             ->get();
 
         // Recurring incomes count
@@ -180,6 +180,62 @@ class DashboardController extends Controller
             ->where('start_date', '<', $startDate)
             ->sum('budget_amount');
 
+        // $parentCategories = Category::whereUserId($userId)->where('type', 'expense')->whereNull('parent_id')->get();
+        // $topExpenseInParentCategories = [];
+
+        // foreach($parentCategories as $parentCategory)
+        // {
+        //     $childCategories = Category::whereUserId($userId)
+        //         ->where('type', 'expense')
+        //         ->where('parent_id', $parentCategory->id)
+        //         ->pluck('id');
+
+        //     $parentCost = (float) Expense::whereUserId($userId)
+        //             ->where('category_id', $parentCategory->id)
+        //             ->dateRange($startDate, $endDate)
+        //             ->sum('amount');
+
+        
+        //     $childCost = (float) Expense::whereUserId($userId)
+        //             ->whereIn('category_id', $childCategories)
+        //             ->dateRange($startDate, $endDate)
+        //             ->sum('amount');
+
+        //     $topExpenseInParentCategories[] = [
+        //         'name' => $parentCategory->name,
+        //         'color' => $parentCategory->color,
+        //         'total' => $parentCost + $childCost,
+        //     ];
+        // }
+
+        $topExpenseInParentCategories = Expense::where('expenses.user_id', $userId)
+            ->dateRange($startDate, $endDate)
+            ->join('categories', 'expenses.category_id', '=', 'categories.id')
+            ->leftJoin('categories as parent_categories', 'categories.parent_id', '=', 'parent_categories.id')
+            ->select(
+                DB::raw('COALESCE(parent_categories.id, categories.id) as parent_id'),
+                DB::raw('COALESCE(parent_categories.name, categories.name) as name'),
+                DB::raw('COALESCE(parent_categories.color, categories.color) as color'),
+                DB::raw('SUM(expenses.amount) as total')
+            )
+            ->where('categories.type', 'expense')
+            ->whereRaw('(categories.parent_id IS NULL OR parent_categories.id IS NOT NULL)')
+            ->groupBy(
+                DB::raw('COALESCE(parent_categories.id, categories.id)'),
+                DB::raw('COALESCE(parent_categories.name, categories.name)'),
+                DB::raw('COALESCE(parent_categories.color, categories.color)')
+            )
+            ->orderBy('total', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->name,
+                    'color' => $item->color,
+                    'total' => (float) $item->total,
+                ];
+            });
+
+
         return response()->json([
             'period' => [
                 'type' => $period,
@@ -194,6 +250,7 @@ class DashboardController extends Controller
             ],
             'monthly_trends' => $monthlyData,
             'top_expense_categories' => $topExpenseCategories,
+            'top_expense_in_parent_categories' => $topExpenseInParentCategories,
             'top_income_categories' => $topIncomeCategories,
             'recent_transactions' => [
                 'expenses' => $recentExpenses,

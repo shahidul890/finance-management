@@ -157,7 +157,7 @@ class ExpenseController extends Controller
             'amount' => 'required|numeric|min:0',
             'expense_date' => 'required|date',
             'category_id' => 'nullable|exists:categories,id',
-            'bank_account_id' => 'filled|integer',
+            'bank_account_id' => 'nullable|integer',
             'payment_method' => 'nullable|string|max:100',
             'expense_type' => ['nullable', Rule::in(['regular', 'dps_payment', 'fdr_investment', 'loan_payment'])],
             'tags' => 'nullable|array',
