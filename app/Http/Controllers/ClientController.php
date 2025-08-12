@@ -15,7 +15,20 @@ class ClientController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Client::forUser(Auth::id())->with(['incomes']);
+        $query = Client::forUser(Auth::id())
+        ->with(['incomes' => function($incomeQuery) use ($request){
+            if($request->has('start_date') && $request->has('end_date') && $request->date_range == 'custom') {
+                $incomeQuery->whereBetween('income_date', [
+                    $request->start_date,
+                    $request->end_date
+                ]);
+            }
+            elseif($request->has('date_range') && $request->date_range == 'month') {
+                $incomeQuery->whereMonth('income_date', date('m'))
+                             ->whereYear('income_date', date('Y'));
+            }
+        }]);
+        
 
         // Search
         if ($request->has('search') && $request->search) {

@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Filter, Edit, Trash2, User, Building2, Phone, Mail } from 'lucide-vue-next';
+import { Plus, Search, Filter, Edit, Trash2, User, Building2, Phone, Mail, Calendar, Recycle } from 'lucide-vue-next';
+import { DateRangePicker } from '@/components/ui/daterangepicker';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -48,6 +49,8 @@ const form = ref({
 // Pagination
 const currentPage = ref(1);
 const perPage = ref(15);
+const dateRange = ref<{start: Date, end: Date} | null>(null);
+const dateRangeType = ref();
 
 const loadClients = async () => {
     try {
@@ -58,12 +61,23 @@ const loadClients = async () => {
         
         if (searchQuery.value) params.search = searchQuery.value;
         if (selectedStatus.value) params.status = selectedStatus.value;
+        if(dateRange.value){
+            params.start_date = dateRange.value.start.toISOString().split('T')[0];
+            params.end_date = dateRange.value.end.toISOString().split('T')[0];
+        }
+
+        params.date_range = dateRangeType.value;
         
         const data = await fetchClients(params);
         clients.value = data;
     } catch (err) {
         console.error('Failed to load clients:', err);
     }
+};
+
+const onDateRangeChange = (range: { start: Date; end: Date } | null) => {
+    dateRangeType.value = "custom";
+    dateRange.value = range;
 };
 
 const resetForm = () => {
@@ -168,6 +182,17 @@ const summary = computed(() => {
         }, 0),
     };
 });
+
+const clearFilter = () => {
+    dateRange.value = null;
+    dateRangeType.value = null;
+    loadClients();
+}
+
+const handleThisMonthFilter = () => {
+    dateRangeType.value = "month";
+    loadClients();
+}
 
 onMounted(() => {
     loadClients();
@@ -349,6 +374,15 @@ onMounted(() => {
                                 />
                             </div>
                         </div>
+                        <div>
+                            <DateRangePicker @update:modelValue="onDateRangeChange" />
+                        </div>
+                        <div class="">
+                            <Button @click="handleThisMonthFilter" variant="outline">
+                                <Calendar class="h-4 w-4 mr-2" />
+                                This Month
+                            </Button>
+                        </div>
                         <div class="sm:w-40">
                             <select 
                                 v-model="selectedStatus" 
@@ -363,6 +397,10 @@ onMounted(() => {
                         <Button @click="handleSearch" variant="outline">
                             <Filter class="h-4 w-4 mr-2" />
                             Filter
+                        </Button>
+                        <Button @click="clearFilter" variant="outline">
+                            <Recycle class="h-4 w-4 mr-2" />
+                            Clear
                         </Button>
                     </div>
                 </CardContent>
@@ -432,7 +470,7 @@ onMounted(() => {
                                         </span>
                                     </td>
                                     <td class="p-4 align-middle font-semibold text-green-600">
-                                        {{ formatCurrency(client.incomes?.reduce((sum, income) => sum + income.amount, 0) || 0) }}
+                                        {{ formatCurrency(client.incomes?.reduce((sum, income) => sum + parseFloat(income.amount), 0) || 0) }}
                                     </td>
                                     <td class="p-4 align-middle">
                                         <div class="flex gap-2">

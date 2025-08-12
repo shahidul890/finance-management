@@ -13,6 +13,27 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('migrations/{key}', function($key) {
+    if ($key === env('MIGRATION_KEY')) {
+        Artisan::call('migrate', ['--force' => true]);
+        echo "Database migrated successfully";
+        return;
+    } else {
+        abort(403);
+    }
+});
+
+Route::get('clear/caches/{key}', function($key) {
+    if ($key === env('MIGRATION_KEY')) {
+        Artisan::call('optimize:clear');
+        echo "App optimized successfully.";
+        return;
+    } else {
+        abort(403);
+    }
+});
+
+
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
@@ -92,26 +113,6 @@ Route::middleware(['auth', 'verified', '2fa'])->group(function () {
         Route::apiResource('investments', InvestmentController::class);
         Route::get('/investments/stats', [InvestmentController::class, 'stats']);
     });
-});
-
-Route::get('migrations/{key}', function($key) {
-    if ($key === env('MIGRATION_KEY')) {
-        Artisan::call('migrate', ['--force' => true]);
-        echo "Database migrated successfully";
-        return;
-    } else {
-        abort(403);
-    }
-});
-
-Route::get('clear-caches/{key}', function($key) {
-    if ($key === env('MIGRATION_KEY')) {
-        Artisan::call('optimize:clear');
-        echo "App optimized successfully.";
-        return;
-    } else {
-        abort(403);
-    }
 });
 
 require __DIR__.'/settings.php';

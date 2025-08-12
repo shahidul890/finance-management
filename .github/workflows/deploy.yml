@@ -29,29 +29,16 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install Node Dependencies
-        run: npm ci
-
       - name: Install PHP Dependencies (Production)
         run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Copy Environment File
-        run: cp .env.example .env
 
       - name: Generate Application Key
         run: php artisan key:generate
 
-      - name: Build Assets
-        run: npm run build
-
-      - name: Publish Ziggy Configuration
-        run: php artisan ziggy:generate
-
-      - name: Optimize Laravel Application
+      - name: Install NPM and Build Assets
         run: |
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
+          npm install
+          npm run build
 
       - name: Remove Development Files
         run: |
@@ -67,8 +54,8 @@ jobs:
       - name: Create ZIP File
         run: |
           mkdir deploy
-          zip -r deploy/archive.zip ./* -x ".git/*" ".github/*" "node_modules/*" ".env" "storage/*"
-          
+          zip -r deploy/archive.zip ./* -x ".git/*" ".github/*" ".vscode/*" "node_modules/*" "*.zip" ".env" "storage/*" "database/*.sqlite"
+
       - name: Upload ZIP File via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -77,17 +64,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./deploy/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            .env.testing
-            storage/logs/*.log
-            storage/framework/cache/data/**
-            storage/framework/sessions/**
-            storage/framework/views/**
-            bootstrap/cache/*.php
         
       - name: Trigger Unzipper Script
         run: |
@@ -99,7 +75,7 @@ jobs:
 
       - name: Clear Laravel Caches
         run: |
-          curl -X GET "${{secrets.APP_URL}}/clear-caches/${{ secrets.MIGRATION_KEY }}"
+          curl -X GET "${{secrets.APP_URL}}/clear/caches/${{ secrets.MIGRATION_KEY }}"
 
       - name: Deployment Success Notification
         if: success()

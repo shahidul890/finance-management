@@ -6,6 +6,7 @@ import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
+import Toast, { POSITION } from 'vue-toastification';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -15,6 +16,17 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         createApp({ render: () => h(App, props) })
             .use(plugin)
+            .use(Toast,{
+                position: POSITION.TOP_LEFT,
+                timeout: 3000,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                draggablePercent: 60,
+                showCloseButtonOnHover: false,
+                hideProgressBar: false,
+                icon: true,
+            })
             .use(ZiggyVue)
             .mount(el);
     },
